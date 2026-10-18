@@ -1,0 +1,24 @@
+{
+  "selection_metric": "mean 5-fold training ROC-AUC",
+  "selected_model": "random_forest",
+  "models": {
+    "logistic_regression": {
+      "cv_roc_auc_mean": 0.8937113611026655,
+      "cv_roc_auc_std": 0.042387503024361325,
+      "test_accuracy": 0.8852459016393442,
+      "test_precision": 0.8387096774193549,
+      "test_recall": 0.9285714285714286,
+      "test_f1": 0.8813559322033898,
+      "test_roc_auc": 0.9664502164502166
+    },
+    "random_forest": {
+      "cv_roc_auc_mean": 0.9036085492607231,
+      "cv_roc_auc_std": 0.03925820286425607,
+      "test_accuracy": 0.8852459016393442,
+      "test_precision": 0.8181818181818182,
+      "test_recall": 0.9642857142857143,
+      "test_f1": 0.8852459016393442,
+      "test_roc_auc": 0.9512987012987013
+    }
+  }
+}

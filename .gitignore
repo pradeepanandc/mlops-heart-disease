@@ -1,0 +1,27 @@
+
+# Python virtual environment and cache
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local MLflow tracking data
+mlruns/
+mlflow.db
+
+# Sensitive environment variables and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Jupyter temporary files
+.ipynb_checkpoints/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Old backup training script
+src/train_models copy.py
