@@ -51,10 +51,10 @@ Status key:
 - [ ] Publish the image to the required registry, if applicable.
 
 ## 6. CI/CD
-- [ ] Create the required GitHub Actions workflow or Jenkins pipeline.
-- [ ] Automate relevant testing and build steps.
-- [ ] Execute the workflow and verify its result.
-- [ ] Record the workflow URL and evidence.
+- [x] Create the required GitHub Actions workflow or Jenkins pipeline.
+- [x] Automate relevant testing and build steps.
+- [x] Execute the workflow and verify its result.
+- [x] Record the workflow URL and evidence.
 
 ## 7. Deployment
 - [ ] Prepare Kubernetes manifests or Helm charts as required.
