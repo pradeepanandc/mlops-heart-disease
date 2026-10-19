@@ -99,3 +99,8 @@
 - Local Kubernetes: deployment and prediction verified through port forwarding.
 - Prometheus and Grafana: monitoring setup verified locally.
 - Prayogshala execution: not yet verified in this progress log.
+- Kubernetes Service changed to `LoadBalancer`; assigned IP: `172.18.0.5`.
+- Verified deployment status: 1/1 replicas available; pod 1/1 Running with zero restarts.
+- Verified API health through port forwarding: `status: healthy`, `model_loaded: true`.
+- Direct access to the assigned LoadBalancer IP from Windows was unsuccessful; port forwarding remains the verified local access method.
+- No publicly accessible cloud endpoint has been established.

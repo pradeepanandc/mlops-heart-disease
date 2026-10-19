@@ -60,15 +60,18 @@ Status key:
 
 - [x] Prepare Kubernetes deployment and service manifests.
 - [x] Deploy the application to the local Kubernetes environment.
-- [x] Verify pod readiness and service status.
-- [x] Test the deployed API health and prediction endpoints.
+- [x] Verify deployment availability and pod readiness.
+- [x] Configure the Kubernetes Service as `LoadBalancer`.
+- [x] Verify the deployed API health and prediction endpoints.
 - [x] Record deployment instructions and local access details.
 
-**Evidence:** `k8s/deployment.yaml`, `k8s/service.yaml`, `screenshots/kubernetes_health_check.png`, `screenshots/kubernetes_swagger_docs.png`, `screenshots/kubernetes_prediction_success.png`.
+**Evidence:** `k8s/deployment.yaml`, `k8s/service.yaml`, `screenshots/kubernetes_health_check.png`, `screenshots/kubernetes_swagger_docs.png`, `screenshots/kubernetes_prediction_success.png`, `screenshots/kubernetes_loadbalancer_service.png`.
 
-**Access method:** `kubectl port-forward service/heart-disease-api-service 8001:8000`, followed by `http://127.0.0.1:8001/docs`.
+**Verified deployment status:** Deployment `1/1` available; pod `1/1 Running` with zero restarts; Service type `LoadBalancer`. The Service has an assigned IP of `172.18.0.5`, but direct access to that IP from Windows was unsuccessful.
 
-**Limitation:** Direct access through the configured NodePort on localhost was unsuccessful. The API was verified using port forwarding; no public cloud endpoint has been established.
+**Verified local access method:** Run `kubectl port-forward service/heart-disease-api-service 8001:8000` and keep the terminal running. Access the API documentation at `http://127.0.0.1:8001/docs`. The health endpoint returned `status: healthy` and `model_loaded: true`. The prediction endpoint was also tested successfully.
+
+**Limitation:** This is a local Docker Desktop Kubernetes deployment, not a publicly accessible cloud endpoint. The assigned LoadBalancer IP was not directly reachable from Windows; port forwarding is the verified access method.
 
 
 ## 8. Monitoring and Logging
