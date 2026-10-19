@@ -57,19 +57,38 @@ Status key:
 - [x] Record the workflow URL and evidence.
 
 ## 7. Deployment
-- [ ] Prepare Kubernetes manifests or Helm charts as required.
-- [ ] Deploy the application in the required environment.
-- [ ] Verify pod and service status.
-- [ ] Test the deployed API.
-- [ ] Record deployment instructions and access details.
+
+- [x] Prepare Kubernetes deployment and service manifests.
+- [x] Deploy the application to the local Kubernetes environment.
+- [x] Verify pod readiness and service status.
+- [x] Test the deployed API health and prediction endpoints.
+- [x] Record deployment instructions and local access details.
+
+**Evidence:** `k8s/deployment.yaml`, `k8s/service.yaml`, `screenshots/kubernetes_health_check.png`, `screenshots/kubernetes_swagger_docs.png`, `screenshots/kubernetes_prediction_success.png`.
+
+**Access method:** `kubectl port-forward service/heart-disease-api-service 8001:8000`, followed by `http://127.0.0.1:8001/docs`.
+
+**Limitation:** Direct access through the configured NodePort on localhost was unsuccessful. The API was verified using port forwarding; no public cloud endpoint has been established.
+
 
 ## 8. Monitoring and Logging
-- [ ] Configure application logging.
-- [ ] Expose application metrics.
-- [ ] Configure Prometheus scraping.
-- [ ] Configure Grafana.
-- [ ] Create the required monitoring dashboard.
-- [ ] Capture screenshots of actual working monitoring components.
+
+- [x] Configure application request logging.
+- [x] Expose Prometheus-compatible API metrics at `/metrics`.
+- [x] Configure Prometheus scraping through `monitoring/prometheus.yml`.
+- [x] Configure Grafana with Prometheus as its data source.
+- [x] Create and save the monitoring dashboard.
+- [x] Capture screenshots of the monitoring components.
+
+**Evidence:**
+- `monitoring/docker-compose.yml`
+- `monitoring/prometheus.yml`
+- `screenshots/api_metrics_endpoint.png`
+- `screenshots/prometheus_target_health.png`
+- `screenshots/grafana_heart_disease_monitoring_dashboard.png`
+
+The Grafana dashboard contains panels for total API requests and average API request latency. The Prometheus target was verified as UP.
+
 
 ## 9. Prayogshala Execution and Evidence
 - [ ] Clone or transfer the project into the correct Prayogshala workspace.
@@ -92,15 +111,16 @@ Status key:
 
 ## Links Register
 
-| Resource | Link | Status |
+| Resource | Link or Access Details | Status |
 |---|---|---|
-| GitHub repository | To be added | Pending |
-| GitHub Actions / Jenkins | To be added | Pending |
-| Container registry | To be added | Pending |
-| Deployed API | To be added | Pending |
-| Monitoring dashboard | To be added if accessible | Pending |
-| Pipeline video | To be added | Pending |
-| Final report | To be added | Pending |
+| GitHub repository | https://github.com/pradeepanandc/mlops-heart-disease | Available |
+| GitHub Actions | Open the repository → Actions → select the successful Heart Disease MLOps CI run | Verified; add the specific run URL if required |
+| Container registry | Not published | Not applicable unless required |
+| Deployed API | Local Kubernetes: `kubectl port-forward service/heart-disease-api-service 8001:8000`, then open `http://127.0.0.1:8001/docs` | Verified locally |
+| Monitoring dashboard | `http://localhost:3000` when Grafana is running | Verified locally |
+| Prometheus | `http://localhost:9090` when Prometheus is running | Target verified UP |
+| Pipeline video | Not yet recorded | Pending |
+| Final report | `REPORT.md` | Markdown report updated; export format to verify |
 
 ## Important Notes
 - Mark a deliverable complete only after it has been implemented and verified.

@@ -1,12 +1,18 @@
 
 from pathlib import Path
 import logging
+import time
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from pydantic import BaseModel, Field, ConfigDict
-
+from prometheus_client import (
+    Counter,
+    Histogram,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
+)
 
 # Project paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -15,6 +21,19 @@ MODEL_PATH = PROJECT_ROOT / "models" / "heart_disease_model.joblib"
 # Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Prometheus metrics
+REQUEST_COUNT = Counter(
+    "api_requests_total",
+    "Total number of API requests",
+    ["method", "endpoint", "http_status"],
+)
+
+REQUEST_LATENCY = Histogram(
+    "api_request_duration_seconds",
+    "API request processing time in seconds",
+    ["method", "endpoint"],
+)
 
 # Load the trained preprocessing + classification pipeline
 if not MODEL_PATH.exists():
@@ -33,6 +52,49 @@ app = FastAPI(
     ),
     version="1.0.0",
 )
+
+
+# Request logging and monitoring middleware
+@app.middleware("http")
+async def monitor_requests(request: Request, call_next):
+    start_time = time.perf_counter()
+    status_code = 500
+
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    except Exception:
+        logger.exception(
+            "Request failed: %s %s",
+            request.method,
+            request.url.path,
+        )
+        raise
+    finally:
+        duration = time.perf_counter() - start_time
+
+        # Avoid recording the metrics endpoint itself to prevent
+        # monitoring scrapes from inflating request metrics.
+        if request.url.path != "/metrics":
+            REQUEST_COUNT.labels(
+                method=request.method,
+                endpoint=request.url.path,
+                http_status=str(status_code),
+            ).inc()
+
+            REQUEST_LATENCY.labels(
+                method=request.method,
+                endpoint=request.url.path,
+            ).observe(duration)
+
+        logger.info(
+            "method=%s path=%s status=%s duration_seconds=%.4f",
+            request.method,
+            request.url.path,
+            status_code,
+            duration,
+        )
 
 
 class HeartDiseaseInput(BaseModel):
@@ -59,12 +121,21 @@ def root():
         "message": "Heart Disease Prediction API is running",
         "docs": "/docs",
         "prediction_endpoint": "/predict",
+        "metrics_endpoint": "/metrics",
     }
 
 
 @app.get("/health")
 def health():
     return {"status": "healthy", "model_loaded": True}
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics():
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
 
 
 @app.post("/predict")
@@ -90,7 +161,9 @@ def predict(data: HeartDiseaseInput):
                 if prediction == 1
                 else "heart_disease_not_detected"
             ),
-            "confidence": round(float(probabilities[classes.index(prediction)]), 4),
+            "confidence": round(
+                float(probabilities[classes.index(prediction)]), 4
+            ),
             "probability_heart_disease": round(
                 heart_disease_probability, 4
             ),

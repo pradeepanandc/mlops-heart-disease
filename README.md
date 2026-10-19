@@ -2,45 +2,43 @@
 
 ## 1. Project Overview
 
-This project develops a machine learning classification system to predict the presence or absence of heart disease using the Cleveland Heart Disease dataset. It applies MLOps practices to support reproducible experiments, model packaging, automated testing, deployment and monitoring.
+This project implements an end-to-end MLOps workflow for binary heart disease classification using the Cleveland Heart Disease dataset. It covers exploratory data analysis, model training and evaluation, MLflow experiment tracking, a FastAPI prediction service, automated testing, Docker packaging, GitHub Actions CI/CD, Kubernetes deployment, and Prometheus/Grafana monitoring.
 
 ## 2. Project Objectives
 
-- Explore and preprocess the heart disease dataset.
-- Develop and evaluate multiple classification models.
-- Track experiments, parameters, metrics and artifacts using MLflow.
-- Package the selected model for reusable predictions.
-- Implement unit tests and a CI/CD workflow.
+- Explore and preprocess the dataset.
+- Train and compare classification models.
+- Track experiments, parameters, metrics, and artifacts using MLflow.
+- Package the selected model as a reusable preprocessing and prediction pipeline.
+- Implement automated tests and CI/CD.
 - Containerize and deploy the prediction API.
-- Monitor API activity and model service performance.
+- Monitor API requests, latency, and application logs.
 
 ## 3. Dataset
 
 The project uses the Cleveland Heart Disease dataset.
 
-- **Raw data:** `data/raw/processed.cleveland.data`
-- **Prepared data:** `data/processed/heart_disease.csv`
-- **Original records:** 303
-- **Features:** 13 input features and 1 target column
-- **Target:** Binary classification, where `0` represents no heart disease and `1` represents heart disease present.
+- Raw data: `data/raw/processed.cleveland.data`
+- Prepared data: `data/processed/heart_disease.csv`
+- Records: 303
+- Input features: 13
+- Original target: converted to binary classification, where `0` means no heart disease and `1` means heart disease present.
 
-The original target values greater than zero are grouped into the positive class. Missing feature values are handled by the model preprocessing pipeline.
+Original target values greater than zero are grouped into the positive class. Missing feature values are handled within the model preprocessing pipeline.
 
 ## 4. Technology Stack
 
-Technologies currently used:
-
-- Python
-- pandas and NumPy
+- Python, pandas, NumPy
 - scikit-learn
 - Matplotlib and Seaborn
 - Jupyter Notebook
-- MLflow for experiment tracking
-- FastAPI and Uvicorn for the prediction API
-- pytest and FastAPI TestClient for automated testing
-- Git and GitHub
-
-Planned integrations include Docker, CI/CD and monitoring tools.
+- MLflow
+- FastAPI and Uvicorn
+- pytest and FastAPI TestClient
+- Git and GitHub Actions
+- Docker
+- Kubernetes
+- Prometheus and Grafana
 
 ## 5. Project Structure
 
@@ -56,19 +54,22 @@ mlops-heart-disease/
 ├── results/
 ├── screenshots/
 ├── docs/
+├── k8s/
+├── monitoring/
+├── .github/workflows/
+├── Dockerfile
 ├── requirements.txt
+├── requirements-docker.txt
 ├── README.md
 ├── REPORT.md
 └── DELIVERABLES.md
 ```
 
-Additional files and folders will be added as the project progresses.
-
 ## 6. Environment Setup
 
-Run these commands in the VS Code terminal from the project root.
+Run commands from the project root in Windows PowerShell.
 
-Activate the existing virtual environment in Windows PowerShell:
+Activate the existing virtual environment:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -86,146 +87,132 @@ Prepare the dataset:
 python src/prepare_data.py
 ```
 
-Train and evaluate the classification models:
+Train and evaluate the models:
 
 ```powershell
 python src/train_models.py
 ```
 
-The training script saves the selected model under `models/` and evaluation outputs under `results/`.
+The training script saves the selected model under `models/` and evaluation artifacts under `results/`.
 
 ## 7. Model Development Results
 
-Two classification models were evaluated:
+Two classification models were evaluated: Logistic Regression and Random Forest.
 
-- Logistic Regression
-- Random Forest
+Random Forest was selected based on its higher mean five-fold cross-validation ROC-AUC.
 
-Random Forest was selected based on its higher mean five-fold cross-validation ROC-AUC of approximately 0.904, compared with approximately 0.894 for Logistic Regression.
+| Metric | Logistic Regression | Random Forest |
+|---|---:|---:|
+| Mean CV ROC-AUC | 0.894 | 0.904 |
+| Test accuracy | 0.885 | 0.885 |
+| Test precision | 0.839 | 0.818 |
+| Test recall | 0.929 | 0.964 |
+| Test F1-score | 0.881 | 0.885 |
+| Test ROC-AUC | 0.966 | 0.951 |
 
-The test accuracy of both models was approximately 88.5%. Detailed evaluation metrics are documented in `REPORT.md` and saved in `results/model_metrics.json`.
+Detailed metrics are available in `results/model_metrics.json` and `REPORT.md`. The test set contains 61 records, so results should be interpreted cautiously.
 
-These results are preliminary and are based on a test set of 61 records.
+## 8. MLflow Experiment Tracking
 
-## 7A. Prediction API
+MLflow uses the local SQLite database `mlflow.db` and the experiment `heart-disease-classification`.
 
-A REST API was implemented using FastAPI and Uvicorn. It loads the saved preprocessing and classification pipeline from `models/heart_disease_model.joblib`.
+The training runs track model parameters, evaluation metrics, classification reports, confusion matrices, and ROC curve plots. The fitted selected pipeline is saved locally as `models/heart_disease_model.joblib`; it is not logged as an MLflow model artifact.
 
-Available endpoints:
+## 9. Prediction API
+
+The FastAPI service loads `models/heart_disease_model.joblib`.
+
+Endpoints:
 
 - `GET /` — API information.
-- `GET /health` — checks API health and model loading.
-- `POST /predict` — accepts 13 heart-disease input features as JSON and returns a predicted class, label, confidence, and probabilities for both classes.
+- `GET /health` — health check.
+- `POST /predict` — accepts 13 input features and returns a prediction, label, confidence, and class probabilities.
+- `GET /metrics` — Prometheus-compatible metrics.
 
-### Start the API
-
-Activate the virtual environment and run:
+### Run locally
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 python -m uvicorn src.app:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Open `http://127.0.0.1:8000/docs` to test the API interactively.
+Open:
 
-### Run Automated Tests
+- API documentation: http://127.0.0.1:8000/docs
+- Health check: http://127.0.0.1:8000/health
+- Metrics: http://127.0.0.1:8000/metrics
 
-Run the API test suite from the project root:
+### Run automated tests
 
 ```powershell
 python -m pytest tests/test_api.py -v
 ```
 
-The initial test run passed all five tests, covering the root endpoint, health endpoint, valid prediction, invalid age rejection, and missing required field rejection.
+Five API tests passed, covering the root endpoint, health endpoint, successful prediction, invalid age rejection, and missing required field rejection.
 
-The prediction is a model estimate for demonstration purposes and is not a medical diagnosis.
+## 10. Docker Packaging
 
-## Docker Setup
+The API is packaged using the root-level `Dockerfile` and `requirements-docker.txt`.
 
-The prediction API is packaged as a Docker container to provide a reproducible runtime environment.
+The current Kubernetes deployment uses the local image `heart-disease-api:1.1`.
 
-### Docker Image
+Build the image when required:
 
-- **Image name:** `heart-disease-api`
-- **Image tag:** `1.0`
-- **Full image name:** `heart-disease-api:1.0`
-- **Container port:** `8000`
-
-### Build the Docker Image
-
-Run the following command from the project root directory, where the `Dockerfile` is located:
-
-```bash
-docker build -t heart-disease-api:1.0 .
+```powershell
+docker build -t heart-disease-api:1.1 .
 ```
 
-### Run the Docker Container
+Run the container locally, provided port 8000 is available:
 
-Start the container using:
-
-```bash
-docker run -d --name heart-disease-api-container -p 8000:8000 heart-disease-api:1.0
+```powershell
+docker run --rm --name heart-disease-api-container -p 8000:8000 heart-disease-api:1.1
 ```
 
-### Verify the Container
+Verify the service at http://127.0.0.1:8000/health and test predictions through http://127.0.0.1:8000/docs.
 
-Check whether the container is running:
+## 11. CI/CD with GitHub Actions
 
-```bash
-docker ps
-```
+The workflow is defined in `.github/workflows/main.yml` and runs on pushes and pull requests targeting `main`.
 
-Open the following URLs in a browser:
+It checks out the repository, sets up Python 3.11, installs dependencies, checks Python syntax, runs API tests, trains and evaluates the models, and uploads training artifacts.
 
-- API health check: http://127.0.0.1:8000/health
-- API documentation: http://127.0.0.1:8000/docs
+The workflow has completed successfully on GitHub. Training artifacts are retained by the workflow for seven days.
 
-Use the interactive API documentation to send a sample JSON request to `POST /predict` and verify that the API returns a successful response.
+## 12. Kubernetes Deployment
 
-### Stop the Container
+Kubernetes manifests are located in `k8s/`:
 
-When finished testing, stop the container using:
+- `k8s/deployment.yaml` — deployment, container configuration, and health probes.
+- `k8s/service.yaml` — NodePort service configuration.
 
-```bash
-docker stop heart-disease-api-container
-```
+The deployment was verified as running, and the API health check and prediction endpoint were tested through `kubectl port-forward`. The configured NodePort did not work directly through localhost, so port forwarding was used for verification. No externally accessible cloud endpoint has been established.
 
-The Docker image is built locally. Publishing it to a container registry and deploying it to a Kubernetes environment remain pending, subject to the assignment requirements.
+## 13. Monitoring and Logging
 
+The API logs request method, path, HTTP status, and request duration. Prometheus metrics are exposed through `/metrics`.
 
-## 8. Current Progress
+Monitoring configuration is located in `monitoring/`:
 
-- [x] Prepared the Cleveland Heart Disease dataset for binary classification.
-- [x] Completed initial exploratory data analysis, including class balance, numerical histograms, and a correlation heatmap.
-- [x] Implemented and compared Logistic Regression and Random Forest pipelines.
-- [x] Evaluated both models using five-fold cross-validation and test-set classification metrics.
-- [x] Selected Random Forest based on mean cross-validation ROC-AUC.
-- [x] Saved the selected model pipeline in `models/heart_disease_model.joblib`.
-- [x] Saved evaluation metrics and plots under `results/`.
-- [x] Configured MLflow experiment tracking using the local SQLite database `mlflow.db`.
-- [x] Logged parameters and evaluation metrics for both classifiers.
-- [x] Logged classification reports, confusion matrices, and ROC curves as MLflow artifacts.
-- [x] Verified successful training runs and Random Forest artifacts in the MLflow UI.
-- [x] Implemented the FastAPI prediction API and health endpoint.
-- [x] Verified successful predictions and input validation through the API.
-- [x] Created and executed five automated API tests; all five passed.
+- `monitoring/docker-compose.yml` starts Prometheus and Grafana.
+- `monitoring/prometheus.yml` configures Prometheus to scrape the API.
 
-### Next Steps
+The Prometheus target was verified as UP. Grafana was connected to Prometheus, and the saved **Heart Disease API Monitoring** dashboard includes panels for total API requests and average API request latency.
 
-- [ ] Document API usage and test instructions in the deliverables checklist.
-- [ ] Build and test the Docker image.
-- [ ] Implement CI/CD using the required workflow.
-- [ ] Deploy the application and verify its endpoint.
-- [ ] Configure monitoring and logging.
-- [ ] Validate the workflow in the Prayogshala environment.
-- [ ] Complete the final report, screenshots, and demonstration video.
+See the monitoring screenshots in `screenshots/`.
 
-## 9. Documentation
+## 14. Evidence and Documentation
 
-- `REPORT.md` — EDA, model evaluation and project findings.
-- `DELIVERABLES.md` — assignment requirements and completion checklist.
-- `docs/progress_log.md` — development progress and execution notes.
+Important evidence files include:
 
-## 10. Project Status
+- EDA: `screenshots/eda Heart Disease Target Class Distribution.png`, `screenshots/eda_correlation_heatmap.png`, `screenshots/eda_numerical_histograms.png`
+- API: `screenshots/api_health_check.png`, `screenshots/api_prediction_success.png`, `screenshots/api_input_validation_error.png`, `screenshots/api_tests_passed.png`
+- Kubernetes: `screenshots/kubernetes_health_check.png`, `screenshots/kubernetes_swagger_docs.png`, `screenshots/kubernetes_prediction_success.png`
+- Monitoring: `screenshots/api_metrics_endpoint.png`, `screenshots/prometheus_target_health.png`, `screenshots/grafana_heart_disease_monitoring_dashboard.png`
 
-The dataset preparation, exploratory data analysis, model development, MLflow experiment tracking, prediction API, and initial automated API tests have been completed and verified. Docker packaging, CI/CD, deployment, monitoring, and Prayogshala execution remain in progress.
+Other key files include `REPORT.md`, `DELIVERABLES.md`, `docs/progress_log.md`, the training and data preparation scripts, the model, tests, workflow, Dockerfile, Kubernetes manifests, and monitoring configuration.
+
+## 15. Limitations and Conclusion
+
+The project demonstrates a practical MLOps pipeline spanning data preparation, model evaluation, experiment tracking, API development, automated testing, containerization, CI/CD, Kubernetes, and monitoring.
+
+The model is experimental and is not clinically validated. It must not be used as a substitute for professional medical diagnosis. Kubernetes verification was performed through port forwarding; a public cloud deployment and externally accessible endpoint have not been established.
